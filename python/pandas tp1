@@ -1,0 +1,91 @@
+import pandas as pd
+
+# Étape 1 : Importation et exploration
+# 1. Charger le fichier "ventes.csv" dans un DataFrame
+df = pd.read_csv("ventes.csv")
+
+# 2. Afficher les 5 premières lignes pour un aperçu des données
+print("Aperçu des 5 premières lignes :")
+print(df.head())
+
+# 3. Vérifier les informations générales
+print("\nInformations générales :")
+print(df.info())
+
+# 4. Afficher un résumé statistique des colonnes numériques
+print("\nRésumé statistique des colonnes numériques :")
+print(df.describe())
+
+# Étape 2 : Nettoyage des données
+# 1. Vérifier les colonnes contenant des valeurs manquantes
+print("\nValeurs manquantes par colonne :")
+print(df.isnull().sum())
+
+# a. Afficher les lignes où il y a une valeur manquante dans la colonne Client
+print("\nLignes avec des valeurs manquantes dans la colonne Client :")
+print(df[df['Client'].isnull()])
+
+# b. Remplacer les valeurs manquantes dans la colonne Client par "Client inconnu"
+df['Client'].fillna("Client inconnu", inplace=True)
+
+# c. Remplacer les valeurs manquantes dans Ville par "Ville inconnue"
+df['Ville'].fillna("Ville inconnue", inplace=True)
+
+# 2. Corriger la colonne Date
+# a. Convertir la colonne Date en format datetime
+df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+
+# b. Créer une nouvelle colonne Mois qui extrait le mois
+df['Mois'] = df['Date'].dt.month
+
+# 3. Vérifier la cohérence des valeurs
+# a. Supprimer les lignes où le Prix ou la Quantité est négatif
+df = df[(df['Prix'] >= 0) & (df['Quantité'] >= 0)]
+
+# Étape 3 : Analyse des données
+# 1. Ajouter une colonne Totale qui calcule le montant total de chaque transaction
+df['Totale'] = df['Prix'] * df['Quantité']
+
+# 2. Calculer le chiffre d’affaires total pour chaque ville
+print("\nChiffre d'affaires total par ville :")
+print(df.groupby('Ville')['Totale'].sum())
+
+# 3. Calculer la moyenne des ventes par mois
+print("\nMoyenne des ventes par mois :")
+print(df.groupby('Mois')['Totale'].mean())
+
+# 4. Identifier les 5 produits les plus vendus (par quantité)
+print("\nLes 5 produits les plus vendus :")
+print(df.groupby('Produit')['Quantité'].sum().sort_values(ascending=False).head(5))
+
+# Étape 4 : Exportation
+# 1. Sauvegarder les données nettoyées et enrichies dans un nouveau fichier
+df.to_csv("ventes_nettoyees.csv", index=False)
+
+# Bonus
+# 1. Analyser la saisonnalité des ventes
+def get_season(month):
+    if month in [3, 4, 5]:
+        return 'Printemps'
+    elif month in [6, 7, 8]:
+        return 'Été'
+    elif month in [9, 10, 11]:
+        return 'Automne'
+    else:
+        return 'Hiver'
+
+df['Saison'] = df['Mois'].apply(get_season)
+print("\nChiffre d'affaires total par saison :")
+print(df.groupby('Saison')['Totale'].sum())
+
+# 2. Identifier les clients réguliers
+clients_reguliers = df.groupby('Client').size()
+clients_reguliers = clients_reguliers[clients_reguliers >= 3]
+print("\nListe des clients réguliers :")
+print(clients_reguliers)
+
+# 3. Identifier le produit le plus vendu par ville
+produits_par_ville = df.groupby(['Ville', 'Produit'])['Quantité'].sum()
+produit_plus_vendu = produits_par_ville.groupby('Ville').idxmax()
+print("\nProduit le plus vendu par ville :")
+print(produit_plus_vendu)
